@@ -1,24 +1,28 @@
-const express = require('express');
+const Hapi = require('@hapi/hapi');
 const routes = require('./routes');
 
-const app = express();
-const port = 9000;
+const init = async () => {
+  const server = Hapi.server({
+    port: 9000,
+    host: 'localhost',
+    routes: {
+      cors: {
+        origin: ['*'], // Aktifkan CORS
+        additionalHeaders: ['Content-Type'], // Tambahkan header yang diizinkan
+      },
+    },
+  });
 
-// Middleware untuk mengaktifkan CORS
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  next();
+  // Mendaftarkan routes dari routes.js
+  routes.forEach((route) => server.route(route));
+
+  await server.start();
+  console.log(`Server berjalan di ${server.info.uri}`);
+};
+
+process.on('unhandledRejection', (err) => {
+  console.log(err);
+  process.exit(1);
 });
 
-// Middleware untuk parsing JSON body
-app.use(express.json()); // Tambahkan ini untuk mem-parsing body request yang berupa JSON
-
-// Menggunakan routes yang didefinisikan di routes.js
-app.use('/', routes);
-
-// Start server
-app.listen(port, () => {
-  console.log(`Server berjalan di http://localhost:${port}`);
-});
+init();
